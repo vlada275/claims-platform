@@ -1,0 +1,2325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Submit a support request</title>
+<style>
+/* ─────────────────────────────────────────────────────────────
+   CONFIGURATION — edit these before deploying
+   ─────────────────────────────────────────────────────────────
+   ZENDESK_PROXY_URL  : URL of your backend endpoint that
+                        forwards requests to Zendesk.
+                        NEVER call Zendesk directly from the
+                        browser — your API token would be exposed.
+
+   BRAND_NAME         : shown in the header and emails
+   BRAND_COLOR        : primary colour (hex)
+   BRAND_LOGO_URL     : optional — leave empty string to hide
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Brand tokens — edit here ── */
+  --brand:       #1D9E75;
+  --brand-dim:   #E3F5EE;
+  --brand-bdr:   #A8DFC8;
+  --brand-dark:  #0B6E4F;
+
+  /* ── Layout ── */
+  --bg:      #F5F4F0;
+  --surf:    #FFFFFF;
+  --surf2:   #F0EFE9;
+  --surf3:   #E8E6DF;
+  --bdr:     #E0DDD5;
+  --bdr2:    #C8C5BC;
+  --txt:     #1A1A18;
+  --txt2:    #4A4845;
+  --txt3:    #8A8780;
+  --red:     #8B1A1A;
+  --rdim:    #FDF0F0;
+  --rbdr:    #F0BABA;
+  --amber:   #7A5000;
+  --adim:    #FEF3DC;
+  --abdr:    #F5CC72;
+  --blue:    #185FA5;
+  --bdim:    #EEF4FC;
+  --bbdr:    #B8D0F0;
+
+  --r:   8px;
+  --rl:  12px;
+  --font: -apple-system, 'Segoe UI', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--txt);
+  font-family: var(--font);
+  font-size: 14px;
+  line-height: 1.65;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+.header {
+  background: var(--surf);
+  border-bottom: 1px solid var(--bdr);
+  padding: 0 24px;
+}
+.header-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.logo { display: flex; align-items: center; gap: 9px; }
+.logo-mark {
+  width: 26px; height: 26px;
+  background: var(--brand);
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+}
+.logo-mark svg { width: 13px; height: 13px; }
+.logo-name { font-size: 14px; font-weight: 600; }
+.logo-sub  { font-size: 10px; color: var(--txt3); }
+.secure-badge {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 11px; color: var(--txt3);
+}
+.secure-badge svg { color: var(--brand); }
+
+/* ── Page shell ── */
+.page { display: none; }
+.page.active { display: block; }
+.shell {
+  max-width: 680px;
+  margin: 0 auto;
+  padding: 28px 20px 60px;
+}
+
+/* ── Form card ── */
+.form-card {
+  background: var(--surf);
+  border: 1px solid var(--bdr);
+  border-radius: var(--rl);
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.form-card-hd {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--bdr);
+}
+.form-card-hd h1 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+.form-card-hd p {
+  font-size: 13px;
+  color: var(--txt3);
+}
+.form-body {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* ── Source step ── */
+.step-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--brand-dark);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  margin-bottom: 10px;
+}
+.source-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+@media (max-width: 480px) {
+  .source-grid { grid-template-columns: repeat(2, 1fr); }
+}
+.source-btn {
+  padding: 12px 8px;
+  border-radius: var(--r);
+  border: 1.5px solid var(--bdr);
+  background: var(--surf2);
+  cursor: pointer;
+  text-align: center;
+  transition: all .15s;
+  font-family: var(--font);
+}
+.source-btn:hover  { border-color: var(--brand); background: var(--brand-dim); }
+.source-btn.on     { border-color: var(--brand); background: var(--brand-dim); box-shadow: 0 0 0 2px rgba(29,158,117,.15); }
+.source-btn .si    { font-size: 20px; display: block; margin-bottom: 5px; }
+.source-btn .sn    { font-size: 12px; font-weight: 500; color: var(--txt); display: block; }
+.source-btn .ss    { font-size: 10px; color: var(--txt3); display: block; margin-top: 1px; }
+
+/* ── Divider ── */
+.divider {
+  height: 1px;
+  background: var(--bdr);
+  margin: 4px 0;
+}
+
+/* ── Fields ── */
+.field { display: flex; flex-direction: column; gap: 5px; }
+.label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--txt2);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.req { color: var(--red); font-size: 11px; }
+.opt { color: var(--txt3); font-size: 10px; font-weight: 400; }
+.input {
+  padding: 9px 12px;
+  border-radius: var(--r);
+  border: 1.5px solid var(--bdr2);
+  background: var(--surf);
+  font-size: 13px;
+  font-family: var(--font);
+  color: var(--txt);
+  outline: none;
+  transition: border-color .15s;
+  width: 100%;
+}
+.input:focus    { border-color: var(--brand); }
+.input.err      { border-color: var(--red); background: var(--rdim); }
+select.input    { cursor: pointer; }
+textarea.input  { resize: vertical; min-height: 60px; line-height: 1.6; }
+.hint { font-size: 11px; color: var(--txt3); }
+.prefill-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--brand-dark);
+  background: var(--brand-dim);
+  border: 1px solid var(--brand-bdr);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-left: 5px;
+}
+.input.prefilled {
+  background: var(--surf2);
+  border-color: var(--brand-bdr);
+  color: var(--txt2);
+  cursor: default;
+}
+.err-msg { font-size: 11px; color: var(--red); display: none; }
+.err-msg.show { display: block; }
+.field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 480px) { .field-row { grid-template-columns: 1fr; } }
+.char-count { font-size: 11px; color: var(--txt3); text-align: right; }
+.char-count.warn { color: var(--amber); }
+
+/* ── Issue type ── */
+.issue-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.issue-btn {
+  padding: 10px 12px;
+  border-radius: var(--r);
+  border: 1.5px solid var(--bdr);
+  background: var(--surf2);
+  cursor: pointer;
+  text-align: left;
+  font-size: 12px;
+  font-family: var(--font);
+  color: var(--txt2);
+  transition: all .12s;
+  line-height: 1.4;
+}
+.issue-btn:hover  { border-color: var(--brand); background: var(--brand-dim); }
+.issue-btn.on     { border-color: var(--brand); background: var(--brand-dim); color: var(--brand-dark); font-weight: 500; }
+.issue-btn .ii    { font-size: 15px; display: block; margin-bottom: 3px; }
+.sub-issues       { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
+.sub-btn {
+  padding: 8px 11px;
+  border-radius: 7px;
+  border: 1px solid var(--bdr);
+  background: var(--surf);
+  cursor: pointer;
+  font-size: 12px;
+  font-family: var(--font);
+  color: var(--txt2);
+  text-align: left;
+  transition: all .1s;
+}
+.sub-btn:hover { border-color: var(--brand); background: var(--brand-dim); }
+.sub-btn.on    { border-color: var(--brand); background: var(--brand-dim); color: var(--brand-dark); font-weight: 500; }
+
+/* ── Inline tip ── */
+.tip-box {
+  display: none;
+  background: var(--bdim);
+  border: 1px solid var(--bbdr);
+  border-radius: var(--r);
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--txt2);
+  line-height: 1.7;
+}
+.tip-box.show { display: block; }
+.tip-box strong { color: var(--txt); }
+.tip-box ul { padding-left: 16px; margin-top: 4px; }
+.tip-box li { margin-bottom: 3px; }
+.tip-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--blue);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── High-payout notice ── */
+.payout-warn {
+  background: var(--adim);
+  border: 1px solid var(--abdr);
+  border-radius: var(--r);
+  padding: 10px 12px;
+  font-size: 12px;
+  color: var(--amber);
+  display: none;
+}
+
+/* ── Upload ── */
+.upload-zone {
+  border: 1.5px dashed var(--bdr2);
+  border-radius: var(--r);
+  padding: 16px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--surf2);
+  transition: all .12s;
+}
+.upload-zone:hover        { border-color: var(--brand); background: var(--brand-dim); }
+.upload-zone.required     { border-color: var(--red); background: var(--rdim); }
+.upload-zone .ui          { font-size: 22px; margin-bottom: 4px; }
+.upload-zone .ut          { font-size: 13px; color: var(--txt2); }
+.upload-zone .us          { font-size: 11px; color: var(--txt3); margin-top: 2px; }
+.file-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 10px;
+  background: var(--brand-dim);
+  border: 1px solid var(--brand-bdr);
+  border-radius: 6px;
+  font-size: 12px;
+  margin-top: 6px;
+}
+.file-item span { flex: 1; }
+.file-item .sz  { color: var(--txt3); font-size: 11px; }
+.file-item .rm  { cursor: pointer; color: var(--red); font-size: 16px; line-height: 1; }
+
+/* ── Submit bar ── */
+.submit-bar {
+  padding: 14px 24px;
+  border-top: 1px solid var(--bdr);
+  background: var(--surf2);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.submit-note { font-size: 11px; color: var(--txt3); flex: 1; }
+.submit-note.err-state { color: var(--red); }
+.btn-submit {
+  padding: 10px 24px;
+  border-radius: var(--r);
+  background: var(--brand);
+  color: #fff;
+  border: none;
+  font-size: 13px;
+  font-family: var(--font);
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity .1s;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 130px;
+  justify-content: center;
+}
+.btn-submit:hover    { opacity: .9; }
+.btn-submit:disabled { opacity: .4; cursor: not-allowed; }
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  display: none;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Progress indicator ── */
+.progress-bar {
+  height: 3px;
+  background: var(--bdr);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 0 24px 0;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--brand);
+  border-radius: 2px;
+  transition: width .3s ease;
+  width: 0%;
+}
+
+/* ── Success page ── */
+.success-card {
+  background: var(--surf);
+  border: 1px solid var(--brand-bdr);
+  border-radius: var(--rl);
+  padding: 40px 32px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,.06);
+}
+.success-icon { font-size: 48px; margin-bottom: 16px; }
+.success-title { font-size: 20px; font-weight: 600; margin-bottom: 8px; }
+.success-sub { font-size: 14px; color: var(--txt2); margin-bottom: 20px; line-height: 1.7; }
+.ticket-id-box {
+  display: inline-block;
+  background: var(--brand-dim);
+  border: 1px solid var(--brand-bdr);
+  border-radius: var(--r);
+  padding: 10px 20px;
+  font-family: monospace;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--brand-dark);
+  margin-bottom: 20px;
+  letter-spacing: .5px;
+}
+.success-steps {
+  background: var(--surf2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--r);
+  padding: 16px 20px;
+  text-align: left;
+  margin-bottom: 20px;
+}
+.ss-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--bdr);
+}
+.ss-row:last-child { border-bottom: none; }
+.ss-num {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.ss-text { font-size: 12px; color: var(--txt2); }
+.btn-new {
+  padding: 10px 20px;
+  border-radius: var(--r);
+  background: transparent;
+  color: var(--brand-dark);
+  border: 1.5px solid var(--brand);
+  font-size: 13px;
+  font-family: var(--font);
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .1s;
+}
+.btn-new:hover { background: var(--brand-dim); }
+
+/* ── Error banner ── */
+.error-banner {
+  display: none;
+  background: var(--rdim);
+  border: 1px solid var(--rbdr);
+  border-radius: var(--r);
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--red);
+  line-height: 1.6;
+  margin: 0 24px 16px;
+}
+.error-banner.show { display: block; }
+
+/* ── Date validation notices ── */
+.date-notice {
+  border-radius: var(--r);
+  padding: 11px 13px;
+  font-size: 12px;
+  line-height: 1.7;
+  display: none;
+}
+.date-notice.show { display: block; }
+.dn-block {
+  background: var(--adim);
+  border: 1px solid var(--abdr);
+  color: var(--amber);
+}
+.dn-balance {
+  background: var(--bdim);
+  border: 1px solid var(--bbdr);
+  color: var(--blue);
+}
+.dn-balance strong { color: var(--txt); }
+
+/* ── Footer ── */
+.footer {
+  text-align: center;
+  padding: 16px 20px;
+  font-size: 11px;
+  color: var(--txt3);
+}
+.footer a { color: var(--brand); text-decoration: none; }
+
+/* ── Wiki ── */
+/* ══════════════════ WIKI PAGE ══════════════════ */
+.wiki-hero{padding:28px 0 20px;}
+.wiki-hero h1{font-size:26px;font-weight:600;margin-bottom:8px;}
+.wiki-hero p{font-size:14px;color:var(--txt2);max-width:560px;}
+.wiki-tags{display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;}
+.wtag{font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--bdr2);color:var(--txt3);}
+.wtag-g{background:var(--gdim);border-color:var(--gbdr);color:var(--green);}
+
+.wiki-search{display:flex;align-items:center;gap:8px;background:var(--surf);border:1px solid var(--bdr2);border-radius:9px;padding:9px 14px;margin:16px 0 24px;max-width:500px;}
+.wiki-search svg{color:var(--txt3);flex-shrink:0;}
+.wiki-search input{background:none;border:none;outline:none;font-size:13px;font-family:var(--font);color:var(--txt);width:100%;}
+.wiki-search input::placeholder{color:var(--txt3);}
+
+.wiki-grid{display:grid;grid-template-columns:220px 1fr;gap:24px;}
+@media(max-width:700px){.wiki-grid{grid-template-columns:1fr;}}
+
+.wiki-toc{position:sticky;top:60px;height:calc(100vh - 80px);overflow-y:auto;}
+.wiki-toc-sec{margin-bottom:8px;}
+.wiki-toc-lbl{font-size:9px;font-weight:600;color:var(--txt3);letter-spacing:.8px;text-transform:uppercase;padding:4px 10px 2px;}
+.wiki-toc-a{display:block;padding:5px 10px;font-size:12px;color:var(--txt2);cursor:pointer;border-radius:6px;border-left:2px solid transparent;transition:all .1s;}
+.wiki-toc-a:hover{background:var(--surf2);color:var(--txt);}
+.wiki-toc-a.on{background:var(--bdim);color:var(--blue);border-left-color:var(--blue);font-weight:500;}
+
+.wiki-content{}
+.wiki-section{background:var(--surf);border:1px solid var(--bdr);border-radius:var(--rl);padding:22px 24px;margin-bottom:16px;}
+.wiki-section h2{font-size:17px;font-weight:600;margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:8px;}
+.wiki-section h2 .sec-icon{font-size:16px;}
+.wiki-section h3{font-size:13px;font-weight:600;color:var(--txt2);margin:16px 0 6px;}
+.wiki-section p{font-size:13px;color:var(--txt2);line-height:1.75;margin-bottom:10px;}
+.wiki-section ul,.wiki-section ol{padding-left:18px;margin:6px 0 10px;}
+.wiki-section li{font-size:13px;color:var(--txt2);line-height:1.65;margin-bottom:4px;}
+.wiki-section li strong{color:var(--txt);}
+.wiki-callout{border-radius:7px;padding:10px 13px;margin:10px 0;font-size:12px;line-height:1.7;}
+.wc-green{background:var(--gdim);border:1px solid var(--gbdr);color:var(--green);}
+.wc-amber{background:var(--adim);border:1px solid var(--abdr);color:var(--amber);}
+.wc-blue{background:var(--bdim);border:1px solid var(--bbdr);color:var(--blue);}
+.wc-red{background:var(--rdim);border:1px solid var(--rbdr);color:var(--red);}
+.wiki-tbl{width:100%;border-collapse:collapse;font-size:12px;margin:10px 0;}
+.wiki-tbl th{padding:6px 10px;text-align:left;font-weight:600;color:var(--txt3);background:var(--surf2);border-bottom:1px solid var(--bdr);}
+.wiki-tbl td{padding:7px 10px;border-bottom:1px solid var(--bdr);color:var(--txt2);vertical-align:top;}
+.wiki-tbl tr:last-child td{border-bottom:none;}
+.spill{color:var(--gstrong);font-size:11px;font-weight:600;cursor:pointer;margin-top:8px;display:inline-block;}
+.spill:hover{text-decoration:underline;}
+
+/* FAQ accordion */
+.faq-item{border-bottom:1px solid var(--bdr);}
+.faq-item:last-child{border-bottom:none;}
+.faq-q{padding:12px 0;font-size:13px;font-weight:500;cursor:pointer;display:flex;justify-content:space-between;align-items:flex-start;gap:10px;color:var(--txt);}
+.faq-q .arr{font-size:10px;color:var(--txt3);margin-top:3px;transition:transform .2s;flex-shrink:0;}
+.faq-q.open .arr{transform:rotate(180deg);}
+.faq-a{max-height:0;overflow:hidden;transition:max-height .3s ease,padding .2s;}
+.faq-a.open{max-height:600px;padding-bottom:14px;}
+.faq-a p{font-size:13px;color:var(--txt2);line-height:1.75;}
+.faq-a ul{padding-left:16px;margin-top:6px;}
+.faq-a li{font-size:13px;color:var(--txt2);margin-bottom:4px;line-height:1.65;}
+
+/* status pills */
+.spill-new{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 7px;border-radius:10px;background:#EEF4FC;color:#185FA5;border:1px solid #B8D0F0;}
+.spill-rev{background:#FEF3DC;color:#7A5000;border:1px solid #F5CC72;}
+.spill-usr{background:#FDF0F0;color:#8B1A1A;border:1px solid #F0BABA;}
+.spill-adv{background:#EEEDFE;color:#26215C;border:1px solid #CECBF6;}
+.spill-app{background:#E3F5EE;color:#085041;border:1px solid #A8DFC8;}
+.spill-rej{background:var(--surf2);color:var(--txt3);border:1px solid var(--bdr);}
+
+
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg viewBox="0 0 13 13" fill="none">
+          <polyline points="1,10 4,6 7,8 11,3 13,5" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name" id="header-brand">Adwall</div>
+        <div class="logo-sub">Support</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button onclick="showPage('wiki')" style="padding:6px 12px;border-radius:6px;background:transparent;border:1px solid var(--bdr);font-size:12px;font-family:var(--font);color:var(--txt2);cursor:pointer;">
+        📖 Help &amp; FAQ
+      </button>
+      <div class="secure-badge">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+          <path d="M6 1L2 3v3c0 2.5 1.8 4.3 4 5 2.2-.7 4-2.5 4-5V3L6 1z" stroke="currentColor" stroke-width="1.1"/>
+        </svg>
+        Secure form
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     FORM PAGE
+════════════════════════════════════ -->
+<div class="page active" id="page-form">
+  <div class="shell">
+
+    <div class="form-card">
+      <div class="form-card-hd">
+        <h1>Submit a support request</h1>
+        <p>Tell us what happened and we'll investigate. Most claims are resolved within 3 business days.</p>
+      </div>
+
+      <div class="progress-bar" id="progress-bar">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+
+      <div class="form-body" id="form-body">
+
+        <!-- ── Step 1: Source ── -->
+        <div id="step-source">
+          <div class="step-label">Step 1 — Where are you submitting from?</div>
+          <div class="source-grid">
+            <button class="source-btn" onclick="setSource('lootup-app', this)">
+              <span class="si">📱</span>
+              <span class="sn">Lootup app</span>
+              <span class="ss">iOS / Android</span>
+            </button>
+            <button class="source-btn" onclick="setSource('pixelpoint-web', this)">
+              <span class="si">🖥️</span>
+              <span class="sn">PixelPoint web</span>
+              <span class="ss">pixelpoint.tv</span>
+            </button>
+            <button class="source-btn" onclick="setSource('offerwall', this)">
+              <span class="si">🏆</span>
+              <span class="sn">Offerwall / API</span>
+              <span class="ss">Adscend widget</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Dynamic fields (rendered by JS) ── -->
+        <div id="dynamic-fields" style="display:none">
+          <div class="divider"></div>
+          <div class="step-label">Step 2 — Your details</div>
+          <div id="fields-container"></div>
+        </div>
+
+      </div>
+
+      <!-- Error banner -->
+      <div class="error-banner" id="error-banner"></div>
+
+      <!-- Submit bar -->
+      <div class="submit-bar" id="submit-bar" style="display:none">
+        <div class="submit-note" id="submit-note">Fill in all required fields</div>
+        <button class="btn-submit" id="btn-submit" disabled onclick="doSubmit()">
+          <div class="spinner" id="spinner"></div>
+          <span id="btn-label">Send request →</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="footer">
+      Your information is handled securely and only used to resolve your claim. &nbsp;·&nbsp;
+      <a href="#" onclick="return false">Privacy policy</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══════════════════════════════════
+     WIKI PAGE
+════════════════════════════════════ -->
+<div class="page" id="page-wiki">
+<div class="shell">
+
+  <div class="wiki-hero">
+    <div style="font-size:11px;font-weight:600;color:var(--gstrong);letter-spacing:.6px;text-transform:uppercase;margin-bottom:6px">Help centre</div>
+    <h1>How claims work &amp; how to get your reward</h1>
+    <p>Everything you need to know about submitting a claim, what happens next, and how to resolve common issues quickly.</p>
+    <div class="wiki-tags">
+      <span class="wtag wtag-g">Updated April 2026</span>
+      <span class="wtag">Adwall · Lootup · PixelPoint</span>
+    </div>
+    <button onclick="showPage('form')" style="margin-top:14px;padding:9px 18px;border-radius:8px;background:var(--gstrong);color:#fff;border:none;font-size:13px;font-family:var(--font);font-weight:500;cursor:pointer;">
+      Submit a claim →
+    </button>
+  </div>
+
+  <div class="wiki-search">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="6" cy="6" r="4.5" stroke="currentColor" stroke-width="1.2"/><line x1="9.5" y1="9.5" x2="13" y2="13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    <input placeholder="Search help topics (e.g. 'tracking', 'rejected', 'proof')…" oninput="wikiSearch(this.value)"/>
+  </div>
+
+  <div class="wiki-grid">
+    <div class="wiki-toc">
+      <div class="wiki-toc-sec">
+        <div class="wiki-toc-lbl">Getting started</div>
+        <div class="wiki-toc-a on" onclick="wToc('w-before',this)">Before you submit</div>
+        <div class="wiki-toc-a" onclick="wToc('w-how',this)">How claims are processed</div>
+        <div class="wiki-toc-a" onclick="wToc('w-statuses',this)">Claim statuses explained</div>
+      </div>
+      <div class="wiki-toc-sec">
+        <div class="wiki-toc-lbl">Common issues</div>
+        <div class="wiki-toc-a" onclick="wToc('w-reward',this)">Reward not received</div>
+        <div class="wiki-toc-a" onclick="wToc('w-tracking',this)">Tracking issues</div>
+        <div class="wiki-toc-a" onclick="wToc('w-technical',this)">Technical problems</div>
+        <div class="wiki-toc-a" onclick="wToc('w-advertiser',this)">Advertiser disputes</div>
+      </div>
+      <div class="wiki-toc-sec">
+        <div class="wiki-toc-lbl">Your claim</div>
+        <div class="wiki-toc-a" onclick="wToc('w-proof',this)">What proof do I need?</div>
+        <div class="wiki-toc-a" onclick="wToc('w-rejected',this)">My claim was rejected</div>
+        <div class="wiki-toc-a" onclick="wToc('w-resubmit',this)">Can I resubmit?</div>
+        <div class="wiki-toc-a" onclick="wToc('w-withdraw',this)">Withdrawing a claim</div>
+      </div>
+      <div class="wiki-toc-sec">
+        <div class="wiki-toc-lbl">FAQ</div>
+        <div class="wiki-toc-a" onclick="wToc('w-faq',this)">All questions answered</div>
+      </div>
+    </div>
+
+    <div class="wiki-content" id="wiki-content">
+
+      <div class="wiki-section" id="w-before">
+        <h2><span class="sec-icon">✅</span> Before you submit a claim</h2>
+        <p>Most reward issues resolve themselves within 48–72 hours. Before submitting a claim, check these things first:</p>
+        <ul>
+          <li><strong>Wait 48–72 hours.</strong> Tracking for many offers — especially app installs and subscriptions — takes up to 3 days to register after you complete the action. If you just completed the offer, wait before submitting.</li>
+          <li><strong>Check you clicked from our platform.</strong> If you navigated to the offer directly (via bookmark, browser history, or by typing the URL), your completion may not have been tracked. The click must originate from the offerwall or platform link.</li>
+          <li><strong>Check your spam folder.</strong> Reward notifications and confirmation emails sometimes land in spam.</li>
+          <li><strong>Check your account balance.</strong> Your reward may already be there — log in and check before submitting a claim.</li>
+          <li><strong>Disable VPN or proxy.</strong> Using a VPN or proxy during offer completion is a common reason for tracking failures. Make sure these are turned off when you complete an offer.</li>
+          <li><strong>Ad blockers.</strong> Some ad blockers prevent tracking pixels from firing. Try completing offers in a clean browser or private window without extensions.</li>
+        </ul>
+        <div class="wiki-callout wc-green">If you have checked all of the above and still haven't received your reward after 72 hours, go ahead and <span class="spill" onclick="showPage('form')">submit a claim →</span></div>
+      </div>
+
+      <div class="wiki-section" id="w-how">
+        <h2><span class="sec-icon">⚙️</span> How claims are processed</h2>
+        <p>When you submit a claim, it goes through the following stages:</p>
+        <div style="display:flex;flex-direction:column;gap:0;margin:10px 0">
+          <div style="display:flex;gap:10px;padding-bottom:12px"><div style="display:flex;flex-direction:column;align-items:center;min-width:22px"><div style="width:20px;height:20px;border-radius:50%;background:var(--gstrong);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0">1</div><div style="width:1px;background:var(--bdr);flex:1;margin-top:3px"></div></div><div><div style="font-size:13px;font-weight:500;margin-bottom:2px">Automatic pre-checks</div><div style="font-size:12px;color:var(--txt3)">We check for duplicate claims, fraud indicators, and whether the conversion was already tracked. If it was, you'll be approved without a full review.</div></div></div>
+          <div style="display:flex;gap:10px;padding-bottom:12px"><div style="display:flex;flex-direction:column;align-items:center;min-width:22px"><div style="width:20px;height:20px;border-radius:50%;background:var(--gstrong);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0">2</div><div style="width:1px;background:var(--bdr);flex:1;margin-top:3px"></div></div><div><div style="font-size:13px;font-weight:500;margin-bottom:2px">Fast-track or manual review</div><div style="font-size:12px;color:var(--txt3)">Simple low-value claims (under $5.00) with valid proof are often approved automatically. Higher-value claims or complex cases are reviewed by our team.</div></div></div>
+          <div style="display:flex;gap:10px;padding-bottom:12px"><div style="display:flex;flex-direction:column;align-items:center;min-width:22px"><div style="width:20px;height:20px;border-radius:50%;background:var(--gstrong);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0">3</div><div style="width:1px;background:var(--bdr);flex:1;margin-top:3px"></div></div><div><div style="font-size:13px;font-weight:500;margin-bottom:2px">Advertiser contact (if needed)</div><div style="font-size:12px;color:var(--txt3)">If we need to confirm your completion with the advertiser, we contact them directly. This takes up to 28 days. We follow up automatically on Day 14 and Day 21.</div></div></div>
+          <div style="display:flex;gap:10px"><div style="display:flex;flex-direction:column;align-items:center;min-width:22px"><div style="width:20px;height:20px;border-radius:50%;background:var(--gstrong);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0">4</div></div><div><div style="font-size:13px;font-weight:500;margin-bottom:2px">Outcome and credit</div><div style="font-size:12px;color:var(--txt3)">You receive an email with the outcome. If approved, your credit appears in your account within 24 hours.</div></div></div>
+        </div>
+        <div class="wiki-callout wc-blue">Most claims are resolved within <strong>3 business days.</strong> Advertiser disputes can take up to 28 days.</div>
+      </div>
+
+      <div class="wiki-section" id="w-statuses">
+        <h2><span class="sec-icon">🔖</span> Claim statuses explained</h2>
+        <p>Here is what each status means and what you should do at each stage:</p>
+        <table class="wiki-tbl">
+          <thead><tr><th>Status</th><th>What it means</th><th>What you should do</th></tr></thead>
+          <tbody>
+            <tr><td><span class="spill-new">Received</span></td><td>Your claim arrived and we're running the first checks.</td><td>Nothing — we'll contact you if we need anything.</td></tr>
+            <tr><td><span class="spill-rev">Under review</span></td><td>Our team is investigating your claim.</td><td>Nothing — wait for our response.</td></tr>
+            <tr><td><span class="spill-usr">Action needed</span></td><td>We've asked you for something — usually proof of completion.</td><td>Check your email and respond within the deadline shown. Missing the deadline will auto-close your claim.</td></tr>
+            <tr><td><span class="spill-adv">With advertiser</span></td><td>We've escalated to the advertiser and are waiting for their response.</td><td>Nothing — we follow up automatically on Day 14 and Day 21.</td></tr>
+            <tr><td><span class="spill-app">Approved</span></td><td>Your claim was approved and your credit has been issued.</td><td>Check your account balance within 24 hours.</td></tr>
+            <tr><td><span class="spill-rej">Rejected</span></td><td>Your claim was rejected. You'll receive a reason in your email.</td><td>Read the reason in your notification. You may be given a resubmission option depending on the reason.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="wiki-section" id="w-reward">
+        <h2><span class="sec-icon">🎁</span> Reward not received</h2>
+        <h3>Most common causes</h3>
+        <ul>
+          <li><strong>Tracking delay.</strong> Most offers credit within 24 hours, but some advertisers take up to 7 days. Wait at least 72 hours before submitting.</li>
+          <li><strong>You completed the offer but the tracking didn't fire.</strong> This is the most common scenario. Submit a claim with your proof of completion and we'll investigate.</li>
+          <li><strong>Reward was already issued to a different account.</strong> If you have multiple accounts, the reward may have gone to the wrong one. Contact support with both account IDs.</li>
+          <li><strong>The reward was reversed.</strong> Some advertisers reverse credits after initial approval if they later detect an issue. You'll receive a notification if this happens — submit a claim to dispute it.</li>
+          <li><strong>You didn't complete all required steps.</strong> Some offers require specific actions — like keeping the app installed for 30 days, or making a minimum purchase. Check the offer terms.</li>
+        </ul>
+        <div class="wiki-callout wc-amber"><strong>Tip:</strong> The most important thing you can do is keep proof. Take a screenshot immediately after completing an offer — app installed and running, subscription confirmation email, purchase receipt. This is critical if you need to claim later.</div>
+        <span class="spill" onclick="showPage('form')">Submit a reward claim →</span>
+      </div>
+
+      <div class="wiki-section" id="w-tracking">
+        <h2><span class="sec-icon">📡</span> Tracking issues</h2>
+        <h3>Why tracking fails</h3>
+        <ul>
+          <li><strong>VPN or proxy was active.</strong> Always disable VPN and proxy tools before clicking an offer and keep them off until the required action is complete.</li>
+          <li><strong>Ad blocker blocked the tracking pixel.</strong> Tracking works through a small pixel that fires when you complete the offer. Ad blockers can prevent this. Try completing offers in a clean browser.</li>
+          <li><strong>You didn't click from our platform.</strong> The tracking link is unique to our platform. Opening the offer directly bypasses tracking entirely.</li>
+          <li><strong>Multiple clicks or devices.</strong> If you clicked the offer link more than once or switched devices, tracking can get confused. Only use one device and click the offer link once.</li>
+          <li><strong>Delayed conversion.</strong> Some offers — especially app installs and trial subscriptions — have a conversion delay. The advertiser only confirms the action after a set period (e.g. 7 days of app usage). This is normal.</li>
+        </ul>
+        <div class="wiki-callout wc-blue">If you don't have a click ID, don't worry — include it if you have it, but we can often recover it. Submit your claim with as many details as possible.</div>
+        <span class="spill" onclick="showPage('form')">Submit a tracking claim →</span>
+      </div>
+
+      <div class="wiki-section" id="w-technical">
+        <h2><span class="sec-icon">⚙️</span> Technical problems</h2>
+        <h3>Offer didn't load or redirect failed</h3>
+        <ul>
+          <li><strong>Try a different browser.</strong> Some offers are not compatible with all browsers. Chrome or Firefox usually work best.</li>
+          <li><strong>Clear cache and cookies</strong> for the offer site and try again.</li>
+          <li><strong>Disable browser extensions</strong> — especially ad blockers, privacy tools, or script blockers.</li>
+          <li><strong>Check your network.</strong> Some offers restrict access by region or require a stable connection.</li>
+        </ul>
+        <h3>App crashed during the offer</h3>
+        <p>If an app crashed after you completed the required action but before it was tracked, submit a claim with a screen recording or screenshot of the error. Include the exact time of the crash if possible.</p>
+        <div class="wiki-callout wc-amber">A screen recording of the issue is the most effective proof for technical claims. If you experienced a redirect failure, take a screenshot of the page you landed on.</div>
+        <span class="spill" onclick="showPage('form')">Submit a technical claim →</span>
+      </div>
+
+      <div class="wiki-section" id="w-advertiser">
+        <h2><span class="sec-icon">📋</span> Advertiser disputes</h2>
+        <p>Sometimes an advertiser rejects a claim even though you completed the offer correctly. This happens for several reasons:</p>
+        <ul>
+          <li><strong>The advertiser says you didn't qualify.</strong> This usually means a mismatch between what you completed and the advertiser's qualification criteria — e.g. they required a new customer and you already had an account.</li>
+          <li><strong>The advertiser's terms changed.</strong> Advertiser terms sometimes change after an offer is listed. If this affected your completion, submit a dispute with the original offer terms if you have them.</li>
+          <li><strong>Attribution window expired.</strong> Advertisers have a set window in which they accept conversions. If you completed the action after this window, they may reject it.</li>
+        </ul>
+        <h3>What we do when you dispute</h3>
+        <p>We contact the advertiser directly and present your evidence. We follow up automatically at Day 14 and Day 21. If the advertiser does not respond within 28 days, we apply our default resolution policy.</p>
+        <div class="wiki-callout wc-blue">The stronger your proof, the better your outcome. Include: the confirmation email, a receipt, the subscription screen — anything that shows you completed the required action.</div>
+        <span class="spill" onclick="showPage('form')">Submit an advertiser dispute →</span>
+      </div>
+
+      <div class="wiki-section" id="w-proof">
+        <h2><span class="sec-icon">📎</span> What proof do I need?</h2>
+        <p>For most claims, a screenshot of the completed action is enough. For high-value claims (above $5.00), proof is required.</p>
+        <table class="wiki-tbl">
+          <thead><tr><th>Issue type</th><th>Best proof</th></tr></thead>
+          <tbody>
+            <tr><td>App install / trial</td><td>Screenshot of the app open on your device with your username visible</td></tr>
+            <tr><td>Subscription</td><td>Confirmation email or subscription screen showing your account and the plan</td></tr>
+            <tr><td>Purchase</td><td>Order confirmation or receipt with order number and your name or email</td></tr>
+            <tr><td>Redirect failure</td><td>Screenshot of the page you landed on, plus the URL bar</td></tr>
+            <tr><td>App crash</td><td>Screen recording of the crash or screenshot of the error message with timestamp</td></tr>
+          </tbody>
+        </table>
+        <div class="wiki-callout wc-amber">Accepted file types: JPG, PNG, PDF, GIF (images), MP4, AVI, MOV (video). Maximum 20 MB per file, up to 5 files. If you are submitting via the API/offerwall, the image limit is 5 MB.</div>
+      </div>
+
+      <div class="wiki-section" id="w-rejected">
+        <h2><span class="sec-icon">❌</span> My claim was rejected</h2>
+        <p>Your rejection notification will include the specific reason. Here are the most common reasons and what they mean:</p>
+        <ul>
+          <li><strong>"Offer not completed according to advertiser terms."</strong> The advertiser reviewed your completion and determined it didn't meet their requirements. Check the offer's terms and conditions.</li>
+          <li><strong>"Conversion already tracked — reward was issued."</strong> Our system found the conversion. Check your account balance — your reward may already be there.</li>
+          <li><strong>"Proof does not match the offer requirements."</strong> The screenshot or document you submitted doesn't clearly show the completed action. You may be given a chance to resubmit with better proof.</li>
+          <li><strong>"Duplicate claim."</strong> You already have an open claim for this offer. You cannot submit two claims for the same offer at the same time.</li>
+          <li><strong>"Submitted too early."</strong> You submitted before the 48-hour tracking window had passed. You will be given a window to resubmit after the tracking delay.</li>
+        </ul>
+        <div class="wiki-callout wc-blue">Always read the full rejection message — it will tell you whether you are eligible to resubmit and how to do so.</div>
+      </div>
+
+      <div class="wiki-section" id="w-resubmit">
+        <h2><span class="sec-icon">🔄</span> Can I resubmit a rejected claim?</h2>
+        <p>Resubmission is not automatic. It is only available in specific situations, and your rejection notification will tell you if you are eligible.</p>
+        <table class="wiki-tbl">
+          <thead><tr><th>Situation</th><th>Can you resubmit?</th></tr></thead>
+          <tbody>
+            <tr><td>Submitted the wrong screenshot</td><td>Yes — you will receive a window to upload the correct proof</td></tr>
+            <tr><td>Selected the wrong offer</td><td>Yes — resubmit with the correct offer ID</td></tr>
+            <tr><td>Submitted before 48-hour tracking delay</td><td>Yes — resubmit after the window passes</td></tr>
+            <tr><td>Technical error caused incomplete submission</td><td>Yes — you will be invited to resubmit cleanly</td></tr>
+            <tr><td>Advertiser rejected your completion</td><td>No — but you can request a second escalation by contacting support</td></tr>
+            <tr><td>Offer terms not met</td><td>No — the offer requirements were not satisfied</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="wiki-section" id="w-withdraw">
+        <h2><span class="sec-icon">↩️</span> Withdrawing a claim</h2>
+        <p>You can withdraw a claim while it is in <span class="spill-new">Received</span> or <span class="spill-usr">Action needed</span> status. Once a claim is under review or with an advertiser, it cannot be withdrawn.</p>
+        <p>To withdraw, go to your claims history and select "Withdraw this claim". A withdrawn claim does not count as a duplicate — you can submit a new claim for the same offer afterwards.</p>
+        <div class="wiki-callout wc-amber">If you accidentally submitted a duplicate, the system will block it automatically. You don't need to withdraw anything — just use your original claim.</div>
+      </div>
+
+      <div class="wiki-section" id="w-faq">
+        <h2><span class="sec-icon">💬</span> Frequently asked questions</h2>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">How long does a claim take to resolve? <span class="arr">▼</span></div>
+          <div class="faq-a"><p>Most claims resolve within 1–3 business days. Simple low-value claims with clear proof are often approved automatically within hours. Claims that require us to contact the advertiser can take up to 28 days — we follow up automatically at Day 14 and Day 21 if the advertiser doesn't respond.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">I completed the offer but it shows as "not tracked" — what do I do? <span class="arr">▼</span></div>
+          <div class="faq-a"><p>First, wait 48–72 hours — tracking for many offers takes time to register. If it still hasn't tracked after that, check that you clicked from our platform (not a direct link or bookmark), had no VPN or ad blocker active, and completed the offer on the same device you clicked from. If all of those are fine, submit a claim — include your click ID if you have it, plus a screenshot of your completed action.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">Why was my claim rejected? <span class="arr">▼</span></div>
+          <div class="faq-a">
+            <p>The most common reasons are:</p>
+            <ul>
+              <li>The offer was not completed according to the advertiser's terms (e.g. existing customer, wrong region, required steps not finished)</li>
+              <li>The reward was already issued — check your account balance</li>
+              <li>The proof you uploaded didn't match the offer</li>
+              <li>The claim was submitted before the 48-hour tracking window</li>
+            </ul>
+            <p>Your rejection notification will always include the specific reason. Check it carefully — it will also tell you if resubmission is available.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">Can I resubmit a rejected claim? <span class="arr">▼</span></div>
+          <div class="faq-a"><p>It depends on the rejection reason. If you submitted wrong proof, selected the wrong offer, or submitted too early, you will be given a resubmission window. If the advertiser reviewed and rejected your completion, resubmission is not available — but you can contact support for a second escalation. Your rejection notification will tell you exactly what is available in your case.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">The advertiser says I didn't qualify — can I still get my reward? <span class="arr">▼</span></div>
+          <div class="faq-a"><p>Yes, in many cases. Submit a claim with your proof of completion and we will contact the advertiser on your behalf. We present your evidence directly and request a review. If the advertiser approves after escalation, your reward is issued. If they don't respond within 28 days, we apply our resolution policy. Stronger proof significantly improves your outcome — include any confirmation emails, receipts, or screenshots you have.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">I submitted a claim by mistake — can I cancel it? <span class="arr">▼</span></div>
+          <div class="faq-a"><p>Yes, while the claim is in "Received" or "Action needed" status. Go to your claims history and select "Withdraw this claim". Once a claim is under review or with an advertiser, it cannot be withdrawn. A withdrawn claim does not count as a duplicate, so you can resubmit for the same offer afterwards.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">What proof do I need to upload? <span class="arr">▼</span></div>
+          <div class="faq-a">
+            <p>It depends on the offer type:</p>
+            <ul>
+              <li><strong>App install:</strong> screenshot of the app open on your device with your username visible</li>
+              <li><strong>Subscription:</strong> the confirmation email or the subscription page showing your account and plan</li>
+              <li><strong>Purchase:</strong> order confirmation or receipt with order number and your name or email</li>
+              <li><strong>Technical issue:</strong> screenshot of the error or a screen recording</li>
+            </ul>
+            <p>Accepted formats: JPG, PNG, PDF, GIF, MP4, MOV. Max 20 MB per file, up to 5 files. Proof is required for all claims above $5.00.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">How do I check the status of my claim? <span class="arr">▼</span></div>
+          <div class="faq-a"><p>You will receive an email update at every status change. You can also use the status checker on the Submit a claim page — enter your claim ID (from your confirmation email) to see the current status and what happens next.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">I have multiple claims — can I submit them all at once? <span class="arr">▼</span></div>
+          <div class="faq-a"><p>Each claim must be submitted separately for a specific offer. You can have multiple open claims for different offers at the same time. You cannot have two open claims for the same offer — the second will be blocked as a duplicate.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">My reward was approved but I haven't received it — what do I do? <span class="arr">▼</span></div>
+          <div class="faq-a"><p>Approved credits appear in your account within 24 hours. If it has been more than 24 hours, check your account balance first — it may be there but not prominently displayed. If it's still not there after 48 hours, contact support with your claim ID and we will investigate the credit issuance.</p></div>
+        </div>
+
+        <div class="faq-item">
+          <div class="faq-q" onclick="toggleFaq(this)">Why does the form look different depending on where I submit from? <span class="arr">▼</span></div>
+          <div class="faq-a"><p>The claim form adapts based on the platform you use — Lootup app, PixelPoint web, Facebook Messenger, or the offerwall. Different platforms collect different information. For example, the app form asks for your device type; the Facebook form asks for your country; the offerwall pre-fills your user ID and offer name automatically. The form only shows fields that are relevant to your specific source, keeping it as simple as possible.</p></div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ══════════════════════════════════
+     SUCCESS PAGE
+════════════════════════════════════ -->
+<div class="page" id="page-success">
+  <div class="shell">
+    <div class="success-card">
+      <div class="success-icon">✅</div>
+      <div class="success-title">Request submitted successfully</div>
+      <p class="success-sub">
+        Your support request has been received. Save your ticket ID — you'll need it to check your status.
+      </p>
+      <div class="ticket-id-box" id="success-ticket-id">—</div>
+
+      <div class="success-steps">
+        <div class="ss-row">
+          <div class="ss-num">1</div>
+          <div class="ss-text"><strong>Confirmation email sent</strong> — check your inbox (and spam folder).</div>
+        </div>
+        <div class="ss-row">
+          <div class="ss-num">2</div>
+          <div class="ss-text"><strong>Automatic review</strong> — we run duplicate, fraud, and conversion checks immediately.</div>
+        </div>
+        <div class="ss-row">
+          <div class="ss-num">3</div>
+          <div class="ss-text"><strong>Resolution within 3 days</strong> — simple claims are often resolved the same day. Advertiser disputes can take up to 28 days.</div>
+        </div>
+        <div class="ss-row">
+          <div class="ss-num">4</div>
+          <div class="ss-text"><strong>We'll email you</strong> at every status change. No need to follow up unless we ask for something.</div>
+        </div>
+      </div>
+
+      <button class="btn-new" onclick="resetForm()">Submit another request</button>
+    </div>
+    <div class="footer">
+      Questions? Email us at <a href="mailto:support@adwall.com">support@adwall.com</a>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+// CONFIGURATION — update before deploying
+// ══════════════════════════════════════════════════════════════
+const CONFIG = {
+  // Your backend proxy URL — this keeps your Zendesk API token secure.
+  // The proxy receives the ticket payload and forwards it to Zendesk.
+  // See the proxy server code below this file.
+  PROXY_URL: 'https://your-backend.com/api/submit-ticket',
+
+  // Zendesk subdomain (only used if calling Zendesk directly in dev mode)
+  ZENDESK_SUBDOMAIN: 'your-subdomain',
+
+  // Set to true during development to skip the real API call
+  // and simulate a successful Zendesk response instead.
+  DEV_MODE: true,
+
+  // Brand displayed in the header
+  BRAND: 'Adwall',
+
+  // ── API1 endpoint — your platform's internal API ──────────────────────────
+  // This endpoint is called when the form loads (or when source is selected)
+  // to pre-fill user data, offer details, proof requirements, and offer events.
+  //
+  // Expected response shape:
+  // {
+  //   user:   { id: "jordan_m", email: "jordan@email.com", name: "Jordan M." },
+  //   offer:  { id: "OFF-SPO-3M", name: "Spotify Premium 3mo", campaignId: "SPO-Q2-26",
+  //             proofRequirements: ["Screenshot of active subscription", "Confirmation email"],
+  //             isMultiEvent: true,
+  //             events: [
+  //               { id: "EVT-001", label: "App installed" },
+  //               { id: "EVT-002", label: "Trial activated (Day 1)" },
+  //               { id: "EVT-003", label: "Trial completed (Day 30)" }
+  //             ] },
+  //   payout: 8.50
+  // }
+  //
+  // Pass the session token or user token in the Authorization header.
+  // The URL can include a query param like ?userId=xxx&offerId=yyy
+  // or you can read them from the URL query string automatically.
+  API1_URL: 'https://your-platform.com/api/v1/claim-context',
+
+  // Zendesk custom field IDs — replace with your actual field IDs
+  // from Admin Center → Objects and rules → Tickets → Fields
+  FIELDS: {
+    source:     360001234567,
+    brand:      360001234568,
+    offer_id:   360001234569,
+    campaign_id:360001234570,
+    click_id:   360001234571,
+    payout:     360001234572,
+    tier:       360001234573,
+    issue_type: 360001234574,
+    issue_sub:  360001234575,
+    device:     360001234576,
+    country:    360001234577,
+    ip_address: 360001234578,
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+// FORM STATE
+// ══════════════════════════════════════════════════════════════
+let state = {
+  source: null,
+  issueType: null,
+  issueSub: null,
+  files: [],
+  balanceFile: null
+};
+
+// ══════════════════════════════════════════════════════════════
+// ISSUE TIPS
+// ══════════════════════════════════════════════════════════════
+const TIPS = {
+  reward: {
+    title: '🎁 Before you submit — reward not received',
+    html: `<ul>
+      <li><strong>Wait 48–72 hours.</strong> Many offers take up to 3 days to credit after completion.</li>
+      <li><strong>Check your account balance</strong> — your reward may already be there.</li>
+      <li><strong>Check you clicked from our platform.</strong> Direct links bypass tracking.</li>
+      <li><strong>VPN active?</strong> VPNs prevent tracking. Disable before completing offers.</li>
+    </ul>`,
+    subs: ['Offer completed but no reward', 'Reward amount is incorrect', 'Reward was reversed', 'Offer cannot be completed due to technical issue']
+  },
+  redemption: {
+    title: '💳 Redemption issue',
+    html: `<ul>
+      <li><strong>PayPal:</strong> Make sure your PayPal email on Lootup matches your active PayPal account.</li>
+      <li><strong>BitPay:</strong> Ensure your BitPay wallet address is correct and active.</li>
+      <li><strong>Gift card:</strong> Check eligibility and that you selected the correct denomination.</li>
+    </ul>`,
+    subs: ['PayPal issue', 'BitPay issue', 'Gift card issue']
+  },
+  other: {
+    title: '💬 Other issue',
+    html: `<p>Describe your issue in detail. Our team reviews every request personally and responds within 3 business days.</p>`,
+    subs: null
+  }
+};
+
+// ══════════════════════════════════════════════════════════════
+// SOURCE PICKER
+// ══════════════════════════════════════════════════════════════
+// ─── API1 state ─────────────────────────────────────────────────────────────
+const api1State = {
+  loaded: false,
+  user:   null,
+  offer:  null,
+  payout: null
+};
+
+// Mock data for DEV_MODE — matches the shape your real API should return
+const API1_MOCK = {
+  user:  { id: 'jordan_m', email: 'jordan@email.com', name: 'Jordan Mitchell' },
+  offer: {
+    id:         'OFF-SPO-3M',
+    name:       'Spotify Premium 3mo',
+    campaignId: 'SPO-Q2-26',
+    proofRequirements: [
+      'Screenshot of your active Spotify Premium subscription screen',
+      'Confirmation email from Spotify showing plan activation'
+    ],
+    isMultiEvent: true,
+    events: [
+      { id: 'EVT-001', label: 'App installed & opened' },
+      { id: 'EVT-002', label: 'Trial activated (Day 1)' },
+      { id: 'EVT-003', label: 'Trial completed (Day 30)' }
+    ]
+  },
+  payout: 8.50
+};
+
+// Fetch offer context from your platform API (API1)
+// In DEV_MODE uses mock data. In production reads userId/offerId from URL params.
+async function fetchOfferContext() {
+  if (CONFIG.DEV_MODE) {
+    await new Promise(r => setTimeout(r, 500));
+    api1State.user   = API1_MOCK.user;
+    api1State.offer  = API1_MOCK.offer;
+    api1State.payout = API1_MOCK.payout;
+    api1State.loaded = true;
+    return;
+  }
+  const params  = new URLSearchParams(window.location.search);
+  const userId  = params.get('userId')  || '';
+  const offerId = params.get('offerId') || '';
+  const token   = params.get('token')   || '';
+  try {
+    const res = await fetch(
+      CONFIG.API1_URL + '?userId=' + encodeURIComponent(userId) + '&offerId=' + encodeURIComponent(offerId),
+      { headers: { 'Authorization': 'Bearer ' + token } }
+    );
+    if (!res.ok) throw new Error('API1 ' + res.status);
+    const data = await res.json();
+    api1State.user   = data.user   || null;
+    api1State.offer  = data.offer  || null;
+    api1State.payout = data.payout || null;
+    api1State.loaded = true;
+  } catch (err) {
+    console.warn('API1 fetch failed, falling back to manual entry:', err);
+    api1State.loaded = false;
+  }
+}
+
+// Apply pre-filled data to form fields after source is selected
+// Helper — mark a field as auto-filled from API1
+function prefillField(id, value) {
+  var el = document.getElementById(id);
+  if (!el || !value) return;
+  el.value = value;
+  el.readOnly = true;
+  el.classList.add('prefilled');
+  // Add badge to the label above this field
+  var label = el.parentElement && el.parentElement.querySelector('.label');
+  if (label && !label.querySelector('.prefill-badge')) {
+    var badge = document.createElement('span');
+    badge.className = 'prefill-badge';
+    badge.innerHTML = '&#x2713; Auto-filled';
+    badge.title = 'This value was filled automatically from your session';
+    label.appendChild(badge);
+  }
+}
+
+function applyApi1ToForm(src) {
+  if (!api1State.loaded) return;
+  var isApp = src === 'lootup-app';
+  var isAPI = src === 'offerwall';
+  if (!isApp && !isAPI) return;
+
+  // Username
+  if (api1State.user && api1State.user.id)
+    prefillField('f-user', api1State.user.id);
+
+  // Email
+  if (api1State.user && api1State.user.email)
+    prefillField('f-email', api1State.user.email);
+
+  if (isAPI) {
+    // Full name
+    if (api1State.user && api1State.user.name)
+      prefillField('f-fullname', api1State.user.name);
+    // Offer name
+    if (api1State.offer)
+      prefillField('f-offer', api1State.offer.name || api1State.offer.id || '');
+    // Campaign ID
+    if (api1State.offer && api1State.offer.campaignId)
+      prefillField('f-campaign', api1State.offer.campaignId);
+  }
+
+  // Lootup app — fill the read-only offer name and offer ID display fields
+  if (isApp && api1State.offer) {
+    prefillField('f-offer-display',    api1State.offer.name || api1State.offer.id || '');
+    prefillField('f-offer-id-display', api1State.offer.id   || '');
+  }
+
+  // Payout (app only — field only visible when reward issue is selected)
+  if (isApp && api1State.payout) {
+    prefillField('f-payout', api1State.payout.toString());
+    checkPayout();
+  }
+
+  autoSubject();
+  checkReady();
+}
+
+// Show proof requirements from the offer definition
+function applyProofRequirements() {
+  const proofHint = document.getElementById('proof-hint');
+  const reqLabel  = document.getElementById('proof-req-label');
+  if (!proofHint) return;
+  const reqs = api1State.offer && api1State.offer.proofRequirements;
+  if (reqs && reqs.length > 0) {
+    proofHint.innerHTML =
+      '<strong>This offer requires the following proof:</strong>' +
+      '<ul style="margin-top:4px;padding-left:16px">' +
+      reqs.map(function(r){ return '<li>' + r + '</li>'; }).join('') +
+      '</ul>';
+    proofHint.style.display = 'block';
+    if (reqLabel) reqLabel.innerHTML = '<span class="req">* required</span>';
+  }
+}
+
+// Inject multi-event dropdown if offer has multiple completion events
+function applyEventDropdown() {
+  if (document.getElementById('event-field')) return;
+  var offer = api1State.offer;
+  if (!offer || !offer.isMultiEvent || !offer.events || offer.events.length === 0) return;
+  var anchor = document.getElementById('date-field') || document.getElementById('payout-field');
+  if (!anchor) return;
+
+  var div = document.createElement('div');
+  div.className = 'field';
+  div.id = 'event-field';
+
+  var labelDiv = document.createElement('div');
+  labelDiv.className = 'label';
+  labelDiv.innerHTML = 'Which event(s) are you claiming for? <span class="req">*</span>';
+
+  var hintDiv = document.createElement('div');
+  hintDiv.className = 'hint';
+  hintDiv.style.marginBottom = '6px';
+  hintDiv.textContent = 'Select all that apply. You can select more than one.';
+
+  var listDiv = document.createElement('div');
+  listDiv.style.cssText = 'display:flex;flex-direction:column;gap:4px';
+
+  // One checkbox per event
+  offer.events.forEach(function(ev) {
+    var lbl = document.createElement('label');
+    lbl.style.cssText = 'display:flex;align-items:center;gap:9px;padding:8px 11px;background:var(--surf2);border:1px solid var(--bdr);border-radius:6px;cursor:pointer;font-size:12px;color:var(--txt2)';
+    lbl.addEventListener('mouseenter', function() { lbl.style.background = 'var(--brand-dim)'; });
+    lbl.addEventListener('mouseleave', function() { lbl.style.background = 'var(--surf2)'; });
+
+    var chk = document.createElement('input');
+    chk.type = 'checkbox';
+    chk.value = ev.id;
+    chk.id = 'evt-' + ev.id;
+    chk.style.cssText = 'accent-color:var(--brand);width:15px;height:15px;flex-shrink:0;cursor:pointer';
+    chk.addEventListener('change', checkReady);
+
+    var span = document.createElement('span');
+    span.textContent = ev.label;
+
+    lbl.appendChild(chk);
+    lbl.appendChild(span);
+    listDiv.appendChild(lbl);
+  });
+
+  // "All events" option at bottom
+  var allLbl = document.createElement('label');
+  allLbl.style.cssText = 'display:flex;align-items:center;gap:9px;padding:8px 11px;background:var(--surf2);border:1px dashed var(--bdr);border-radius:6px;cursor:pointer;font-size:12px;color:var(--txt3);margin-top:2px';
+  allLbl.addEventListener('mouseenter', function() { allLbl.style.background = 'var(--brand-dim)'; });
+  allLbl.addEventListener('mouseleave', function() { allLbl.style.background = 'var(--surf2)'; });
+
+  var allChk = document.createElement('input');
+  allChk.type = 'checkbox';
+  allChk.value = '__all__';
+  allChk.id = 'evt-all';
+  allChk.style.cssText = 'accent-color:var(--brand);width:15px;height:15px;flex-shrink:0;cursor:pointer';
+  allChk.addEventListener('change', function() { onSelectAllEvents(allChk); });
+
+  var allSpan = document.createElement('span');
+  allSpan.textContent = 'All events — entire offer completion';
+
+  allLbl.appendChild(allChk);
+  allLbl.appendChild(allSpan);
+  listDiv.appendChild(allLbl);
+
+  div.appendChild(labelDiv);
+  div.appendChild(hintDiv);
+  div.appendChild(listDiv);
+  anchor.insertAdjacentElement('afterend', div);
+}
+
+// "All events" checkbox toggles all individual event checkboxes
+function onSelectAllEvents(allChk) {
+  var offer = api1State.offer;
+  if (!offer || !offer.events) return;
+  offer.events.forEach(function(ev) {
+    var el = document.getElementById('evt-' + ev.id);
+    if (el) el.checked = allChk.checked;
+  });
+  checkReady();
+}
+
+// Returns array of selected event labels for ticket payload
+function getSelectedEvents() {
+  var allChk = document.getElementById('evt-all');
+  if (allChk && allChk.checked) return ['All events (entire offer completion)'];
+  var offer = api1State.offer;
+  if (!offer || !offer.events) return [];
+  return offer.events.filter(function(ev) {
+    var el = document.getElementById('evt-' + ev.id);
+    return el && el.checked;
+  }).map(function(ev) { return ev.label; });
+}
+
+
+function setSource(src, btn) {
+  state.source = src;
+  state.issueType = null;
+  state.issueSub = null;
+  state.files = [];
+  document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  renderFields(src);
+  document.getElementById('dynamic-fields').style.display = 'block';
+  document.getElementById('submit-bar').style.display = 'flex';
+  updateProgress();
+  setTimeout(() => {
+    document.getElementById('dynamic-fields').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
+}
+
+// ══════════════════════════════════════════════════════════════
+// FIELD RENDERER — adapts per source
+// ══════════════════════════════════════════════════════════════
+function renderFields(src) {
+  const container = document.getElementById('fields-container');
+  const isApp = src === 'lootup-app';
+  const isPP  = src === 'pixelpoint-web';
+  const isAPI = src === 'offerwall';
+  let html = '';
+
+  // ── LOOTUP APP ──────────────────────────────────────────
+  if (isApp) {
+    html += `
+      <div class="field-row">
+        <div class="field">
+          <div class="label">Username <span class="req">*</span></div>
+          <input class="input" id="f-user" type="text" placeholder="Your Lootup username" oninput="checkReady()"/>
+        </div>
+        <div class="field">
+          <div class="label">Email address <span class="req">*</span></div>
+          <input class="input" id="f-email" type="email" placeholder="your@email.com" oninput="checkReady()"/>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">What's the issue? <span class="req">*</span></div>
+        <div class="issue-grid" id="issue-grid-app">
+          <button class="issue-btn" onclick="selectLootupIssue('reward',this)"><span class="ii">🎁</span>Reward not received</button>
+          <button class="issue-btn" onclick="selectLootupIssue('redemption',this)"><span class="ii">💳</span>Redemption issue</button>
+          <button class="issue-btn" onclick="selectLootupIssue('3rdparty',this)"><span class="ii">🔗</span>3rd party offerwall issue</button>
+          <button class="issue-btn" onclick="selectLootupIssue('other',this)"><span class="ii">💬</span>Other</button>
+        </div>
+        <div id="lootup-sub-field" style="display:none;margin-top:8px">
+          <div class="label" style="margin-bottom:5px">More specifically: <span class="req">*</span></div>
+          <div class="sub-issues" id="lootup-sub-list"></div>
+        </div>
+        <div class="tip-box" id="tip-box"><div class="tip-title" id="tip-title"></div><div id="tip-body"></div></div>
+        <div id="thirdparty-block" class="date-notice dn-block" style="display:none;margin-top:8px">
+          <strong>🔗 3rd party offerwall issues must be handled by the offerwall provider directly.</strong><br>
+          Please contact the offerwall you used through their own support channel — we are unable to investigate issues with third-party offerwalls.<br><br>
+          <strong>Select your offerwall to contact their support:</strong><br>
+          <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px" id="offerwall-links">
+            <a href="https://www.ayet.com/support" target="_blank" style="padding:5px 10px;background:rgba(0,0,0,.15);border-radius:5px;font-size:11px;font-weight:500;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.15)">ayeT-Studios ↗</a>
+            <a href="https://lootably.com/contact" target="_blank" style="padding:5px 10px;background:rgba(0,0,0,.15);border-radius:5px;font-size:11px;font-weight:500;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.15)">Lootably ↗</a>
+            <a href="https://www.mychips.net/support" target="_blank" style="padding:5px 10px;background:rgba(0,0,0,.15);border-radius:5px;font-size:11px;font-weight:500;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.15)">MyChips ↗</a>
+            <a href="https://torox.io/contact" target="_blank" style="padding:5px 10px;background:rgba(0,0,0,.15);border-radius:5px;font-size:11px;font-weight:500;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.15)">Torox ↗</a>
+            <a href="https://www.offertoro.com/support" target="_blank" style="padding:5px 10px;background:rgba(0,0,0,.15);border-radius:5px;font-size:11px;font-weight:500;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.15)">OfferToro ↗</a>
+            <a href="https://www.adgem.com/support" target="_blank" style="padding:5px 10px;background:rgba(0,0,0,.15);border-radius:5px;font-size:11px;font-weight:500;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.15)">AdGem ↗</a>
+            <a href="https://adjoe.io/contact" target="_blank" style="padding:5px 10px;background:rgba(0,0,0,.15);border-radius:5px;font-size:11px;font-weight:500;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.15)">Adjoe ↗</a>
+            <a href="https://tapjoy.com/support" target="_blank" style="padding:5px 10px;background:rgba(0,0,0,.15);border-radius:5px;font-size:11px;font-weight:500;text-decoration:none;color:inherit;border:1px solid rgba(255,255,255,.15)">Tapjoy ↗</a>
+          </div>
+        </div>
+      </div>
+      <div class="field-row" id="offer-display-row">
+        <div class="field">
+          <div class="label">Offer name</div>
+          <input class="input" id="f-offer-display" type="text" readonly
+            style="background:var(--surf2);color:var(--txt2);cursor:default"
+            placeholder="Auto-filled from your session"/>
+          <div class="hint">Pre-filled automatically from your session</div>
+        </div>
+        <div class="field">
+          <div class="label">Offer ID</div>
+          <input class="input" id="f-offer-id-display" type="text" readonly
+            style="background:var(--surf2);color:var(--txt2);cursor:default"
+            placeholder="Auto-filled from your session"/>
+        </div>
+      </div>
+      <div class="field" id="payout-field" style="display:none">
+        <div class="label">Payout amount <span class="req">*</span></div>
+        <input class="input" id="f-payout" type="text" inputmode="decimal" placeholder="e.g. 4.50" oninput="checkPayout();checkReady()"/>
+        <div class="hint">Numbers only — no $ sign</div>
+      </div>
+`;
+  }
+
+  // ── PIXELPOINT WEB ─────────────────────────────────────
+  if (isPP) {
+    html += `
+      <div class="field-row">
+        <div class="field">
+          <div class="label">Username <span class="opt">(optional)</span></div>
+          <input class="input" id="f-user" type="text" placeholder="Your PixelPoint username" oninput="checkReady()"/>
+        </div>
+        <div class="field">
+          <div class="label">Email address <span class="req">*</span></div>
+          <input class="input" id="f-email" type="email" placeholder="your@email.com" oninput="checkReady()"/>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Issue category <span class="req">*</span></div>
+        <div style="display:flex;flex-direction:column;gap:6px" id="pp-issues">
+          <button class="issue-btn" onclick="selectPPIssue('pp-support','PixelPoint user support',this)" style="width:100%"><span class="ii">🖥️</span> PixelPoint user support</button>
+          <button class="issue-btn" onclick="selectPPIssue('creator','Creator inquiries',this)" style="width:100%"><span class="ii">🎬</span> Creator inquiries</button>
+          <button class="issue-btn" onclick="selectPPIssue('suspended','Account suspended',this)" style="width:100%"><span class="ii">🔒</span> Account suspended</button>
+          <button class="issue-btn" onclick="selectPPIssue('other','Other',this)" style="width:100%"><span class="ii">💬</span> Other</button>
+        </div>
+        <div id="pp-extra" style="margin-top:8px"></div>
+      </div>
+      <div class="field">
+        <div class="label">Attach files <span class="opt">(optional)</span></div>
+        <div class="hint" style="margin-bottom:6px">You can upload any files that may help us understand your issue — screenshots, recordings, or documents.</div>
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('proof-input').click()">
+          <div class="ui">📎</div><div class="ut" id="upload-txt">Click to attach files</div>
+          <div class="us">JPG, PNG, PDF, GIF — max 20 MB per file · up to 5 files</div>
+        </div>
+        <input type="file" id="proof-input" multiple accept=".jpg,.jpeg,.png,.pdf,.gif" style="display:none" onchange="handleFiles(this)"/>
+        <div id="file-list"></div>
+      </div>`;
+  }
+
+  // ── OFFERWALL / API ────────────────────────────────────
+  if (isAPI) {
+    html += `
+      <div class="field-row">
+        <div class="field">
+          <div class="label">Username <span class="req">*</span></div>
+          <input class="input" id="f-user" type="text" placeholder="Pre-filled from session" oninput="checkReady()"/>
+        </div>
+        <div class="field">
+          <div class="label">Email address <span class="req">*</span></div>
+          <input class="input" id="f-email" type="email" placeholder="your@email.com" oninput="checkReady()"/>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Full name <span class="req">*</span></div>
+        <input class="input" id="f-fullname" type="text" placeholder="First and last name" oninput="checkReady()"/>
+      </div>
+      <div class="field-row">
+        <div class="field">
+          <div class="label">Offer name / ID <span class="req">*</span></div>
+          <input class="input" id="f-offer" type="text" placeholder="Pre-filled from session" oninput="checkReady();autoSubject()"/>
+          <div class="hint">Pre-filled from your offerwall session</div>
+        </div>
+        <div class="field">
+          <div class="label">Campaign ID <span class="opt">(optional)</span></div>
+          <input class="input" id="f-campaign" type="text" placeholder="e.g. CAMP-8810" oninput="autoSubject()"/>
+        </div>
+      </div>
+      <div class="field">
+        <div class="label">Subject</div>
+        <input class="input" id="f-subject" type="text" readonly
+          style="background:var(--surf2);color:var(--txt3);cursor:default"
+          placeholder="Adwall Ticket (issue reason — Offer name (ID: offer_id))"/>
+        <div class="hint">Auto-generated from your issue and campaign details</div>
+      </div>
+
+      <div class="field">
+        <div class="label">What's the issue? <span class="req">*</span></div>
+        <div class="issue-grid">
+          <button class="issue-btn" onclick="selectIssue('reward',this)"><span class="ii">🎁</span>Reward not received</button>
+          <button class="issue-btn" onclick="selectIssue('other',this)"><span class="ii">💬</span>Other</button>
+        </div>
+        <div id="sub-field" style="display:none;margin-top:8px">
+          <div class="label" style="margin-bottom:5px">More specifically: <span class="req">*</span></div>
+          <div class="sub-issues" id="sub-list"></div>
+        </div>
+        <div class="tip-box" id="tip-box"><div class="tip-title" id="tip-title"></div><div id="tip-body"></div></div>
+      </div>`;
+  }
+
+  // ── DATE (app + API only) ──────────────────────────────
+  if (isApp || isAPI) {
+    html += `
+      <div class="field" id="date-field">
+        <div class="label">When did you complete the offer? <span class="req">*</span></div>
+        <input class="input" id="f-date" type="datetime-local" oninput="onDateChange()"/>
+        <div class="hint">Must not be in the future or older than 180 days.</div>
+        <div class="date-notice dn-block" id="notice-too-early">
+          <strong>⏳ It's too soon to submit a claim.</strong><br>
+          Rewards can take up to 72 hours to appear. Please wait until <strong id="notice-wait-until"></strong> before submitting.
+        </div>
+        <div class="date-notice dn-balance" id="notice-balance-proof">
+          <strong>📸 Over 72 hours have passed.</strong><br>
+          We need a screenshot of your account balance showing the reward has <em>not</em> been credited. Upload it in the mandatory section below.
+        </div>
+        <div id="balance-upload-section" style="display:none;margin-top:10px">
+          <div class="field">
+            <div class="label">Account balance screenshot <span class="req">* required</span></div>
+            <div class="hint" style="margin-bottom:6px">Screenshot your balance or rewards page showing the reward is missing.</div>
+            <div class="upload-zone" id="balance-upload-zone" onclick="document.getElementById('balance-input').click()">
+              <div class="ui">💰</div>
+              <div class="ut" id="balance-upload-txt">Click to upload your account balance screenshot</div>
+              <div class="us">JPG, PNG, PDF — max 20 MB</div>
+            </div>
+            <input type="file" id="balance-input" accept=".jpg,.jpeg,.png,.pdf" style="display:none" onchange="handleBalanceFile(this)"/>
+            <div id="balance-file-item"></div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // ── DESCRIPTION — all sources ────────────────────────
+  html += `
+    <div class="field">
+      <div class="label">Describe your issue <span class="req">*</span></div>
+      <div class="hint" style="margin-bottom:5px">Keep it brief — screenshots and attachments tell us more than long descriptions. Max 500 characters.</div>
+      <textarea class="input" id="f-desc" placeholder="Briefly describe what happened. The more useful info is in your attachments below." oninput="updateChar();checkReady()"></textarea>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:3px">
+        <div class="err-msg" id="err-desc">Description is too short.</div>
+        <div class="char-count" id="char-count">0 / 500</div>
+      </div>
+    </div>`;
+
+  // ── PROOF (app + API) ────────────────────────────────
+  if (isApp || isAPI) {
+    const maxSize = isAPI ? '5 MB' : '20 MB';
+    html += `
+      <div class="field" id="proof-field">
+        <div class="label">Proof of completion <span id="proof-req-label" class="opt">(optional)</span></div>
+        <div class="hint" id="proof-hint" style="display:none"></div>
+        <div class="upload-zone" id="upload-zone" onclick="document.getElementById('proof-input').click()">
+          <div class="ui">📎</div>
+          <div class="ut" id="upload-txt">Click to upload a screenshot or receipt</div>
+          <div class="us">JPG, PNG, PDF, GIF — max ${maxSize} per file · up to 5 files</div>
+        </div>
+        <input type="file" id="proof-input" multiple accept=".jpg,.jpeg,.png,.pdf,.gif" style="display:none" onchange="handleFiles(this)"/>
+        <div id="file-list"></div>
+      </div>`;
+  }
+
+  container.innerHTML = html;
+  if (isAPI) autoSubject();
+  checkReady();
+}
+
+
+
+// ── Issue selection ──────────────────────────────────────────
+function selectLootupIssue(type, btn) {
+  state.issueType = type;
+  state.issueSub  = null;
+  document.querySelectorAll('#issue-grid-app .issue-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const subField  = document.getElementById('lootup-sub-field');
+  const blockMsg  = document.getElementById('thirdparty-block');
+  const payoutFld = document.getElementById('payout-field');
+  const tipBox    = document.getElementById('tip-box');
+  if (blockMsg)  blockMsg.style.display  = 'none';
+  if (payoutFld) payoutFld.style.display = 'none';
+  if (type === '3rdparty') {
+    if (blockMsg) blockMsg.style.display = 'block';
+    if (subField) subField.style.display = 'none';
+    if (tipBox)   tipBox.classList.remove('show');
+    state.issueSub = 'blocked';
+    checkReady();
+    return;
+  }
+  const tip = TIPS[type];
+  if (tip && tip.subs) {
+    const sl = document.getElementById('lootup-sub-list');
+    if (sl) sl.innerHTML = tip.subs.map(s =>
+      '<button class="sub-btn" onclick="selectSub(\'' + s.replace(/'/g,"\\'") + '\',this)">' + s + '</button>'
+    ).join('');
+    if (subField) subField.style.display = 'block';
+  } else {
+    if (subField) subField.style.display = 'none';
+    state.issueSub = 'other';
+  }
+  if (tipBox && tip) {
+    document.getElementById('tip-title').textContent = tip.title;
+    document.getElementById('tip-body').innerHTML    = tip.html;
+    tipBox.classList.add('show');
+  }
+  if (payoutFld) payoutFld.style.display = type === 'reward' ? 'block' : 'none';
+  // If reward issue and offer context loaded, show proof requirements + event dropdown
+  if (type === 'reward') {
+    setTimeout(function() {
+      applyProofRequirements();
+      applyEventDropdown();
+    }, 50);
+  } else {
+    // Remove event dropdown if switched away from reward
+    var ef = document.getElementById('event-field');
+    if (ef) ef.remove();
+  }
+  updateProofLabel();
+  onDateChange();
+  checkReady();
+}
+
+function autoSubject() {
+  const el = document.getElementById('f-subject');
+  if (!el) return;
+  // Prefer API1 data if available, fall back to form fields
+  const offerName = (api1State.offer && api1State.offer.name)
+    ? api1State.offer.name
+    : ((document.getElementById('f-offer') || {}).value || '');
+  const offerId = (api1State.offer && api1State.offer.id)
+    ? api1State.offer.id
+    : ((document.getElementById('f-campaign') || {}).value || '');
+  const issue = state.issueType === 'reward'
+    ? 'Reward not received'
+    : state.issueType === 'other'
+    ? 'Other'
+    : (state.issueType || '');
+  el.value = 'Adwall Ticket ('
+    + issue
+    + (offerName ? ' — ' + offerName : '')
+    + (offerId   ? ' (ID: ' + offerId + ')' : '')
+    + ')';
+}
+
+function selectIssue(type, btn) {
+  state.issueType = type;
+  state.issueSub  = null;
+  document.querySelectorAll('.issue-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+
+  const sf  = document.getElementById('sub-field');
+  const sl  = document.getElementById('sub-list');
+  const tb  = document.getElementById('tip-box');
+  const tt  = document.getElementById('tip-title');
+  const tbo = document.getElementById('tip-body');
+
+  if (type === 'other') {
+    // Other — no sub-types, no tip, user goes straight to free description
+    if (sf) sf.style.display = 'none';
+    if (tb) tb.classList.remove('show');
+    state.issueSub = 'other';
+    var ef = document.getElementById('event-field');
+    if (ef) ef.remove();
+  } else {
+    const tip = TIPS[type];
+    if (tip && tip.subs) {
+      if (sl) sl.innerHTML = tip.subs.map(function(s) {
+        return '<button class="sub-btn" onclick="selectSub(\'' + s.replace(/'/g, "\'") + '\',this)">' + s + '</button>';
+      }).join('');
+      if (sf) sf.style.display = 'block';
+    } else if (sf) {
+      sf.style.display = 'none';
+    }
+    if (tb && tip) {
+      tt.textContent = tip.title;
+      tbo.innerHTML  = tip.html;
+      tb.classList.add('show');
+    }
+    if (type === 'reward') {
+      setTimeout(function() { applyProofRequirements(); applyEventDropdown(); }, 50);
+    } else {
+      var ef2 = document.getElementById('event-field');
+      if (ef2) ef2.remove();
+    }
+  }
+  autoSubject();
+  updateProofLabel();
+  onDateChange();
+  checkReady();
+}
+
+function selectSub(sub, btn) {
+  state.issueSub = sub;
+  document.querySelectorAll('.sub-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  checkReady();
+}
+
+// ── PixelPoint issue picker ─────────────────────────────────
+function selectPPIssue(val, label, btn) {
+  state.issueType = label;
+  state.issueSub  = label;
+  document.querySelectorAll('#pp-issues .issue-btn').forEach(b => b.classList.remove('on'));
+  btn.classList.add('on');
+  const extra = document.getElementById('pp-extra');
+  if (!extra) return;
+  let html = '';
+  if (val === 'pp-support') {
+    html = `<div class="field"><div class="label">Which site or app were you using? <span class="req">*</span></div>
+      <select class="input" id="f-sites" onchange="checkReady()">
+        <option value="">Select the site or app…</option>
+        <option>Recipepanda.tv</option>
+        <option>Puppybear.tv</option>
+        <option>Gamersden.tv</option>
+        <option>Recipeninja.tv</option>
+        <option>Nestmade.tv</option>
+        <option>Lolvault.tv</option>
+        <option>Globeset.tv</option>
+        <option>Vlogaday.com</option>
+        <option>Quickrecipes.tv</option>
+        <option>Discoverden.tv</option>
+        <option>Discoverhub.tv</option>
+        <option>Tictacti.com</option>
+        <option>Cozycrafts.tv</option>
+        <option>Other</option>
+      </select></div>`;
+  } else if (val === 'creator') {
+    html = `<div class="field"><div class="label">Creator channel URL <span class="req">*</span></div>
+      <input class="input" id="f-creator" type="url" placeholder="https://…" oninput="checkReady()"/></div>`;
+  } else if (val === 'suspended') {
+    html = `
+      <div class="field"><div class="label">Device type <span class="req">*</span></div>
+        <select class="input" id="f-device-pp" onchange="checkReady()">
+          <option value="">Select…</option>
+          <option>Desktop PC</option><option>Desktop Mac</option>
+          <option>Mobile — Android</option><option>Mobile — iPhone / iPad</option>
+        </select></div>
+      <div class="field"><div class="label">Did you use a VPN or proxy? <span class="req">*</span></div>
+        <input class="input" id="f-vpn" type="text" placeholder="Yes / No — describe if yes" oninput="checkReady()"/></div>
+      <div class="field">
+        <div class="label">Your IP address <span class="req">*</span></div>
+        <input class="input" id="f-ip-pp" type="text" placeholder="e.g. 192.168.1.1" oninput="checkReady()"/>
+        <div class="hint">Find your IP at <a href="https://www.whatismyip.com" target="_blank" style="color:var(--brand-dark);font-weight:500">whatismyip.com ↗</a></div>
+      </div>`;
+  }
+  extra.innerHTML = html;
+  checkReady();
+}
+
+// ── Date change handler ─────────────────────────────────────
+function onDateChange() {
+  const dateEl  = document.getElementById('f-date');
+  const earlyEl = document.getElementById('notice-too-early');
+  const balEl   = document.getElementById('notice-balance-proof');
+  const waitEl  = document.getElementById('notice-wait-until');
+
+  if (!earlyEl || !balEl) { checkReady(); return; }
+
+  // Hide both notices first
+  earlyEl.classList.remove('show');
+  balEl.classList.remove('show');
+  const bsecAll = document.getElementById('balance-upload-section');
+  if (bsecAll) { bsecAll.style.display = 'none'; state.balanceFile = null; }
+
+  const val = dateEl && dateEl.value;
+  if (!val) { checkReady(); return; }
+
+  const completedAt = new Date(val);
+  const now = new Date();
+  const hoursAgo = (now - completedAt) / 1000 / 3600;
+
+  // Only apply 72hr logic for "reward not received" issue
+  if (state.issueType === 'reward') {
+    if (hoursAgo >= 0 && hoursAgo < 72) {
+      // Too early — show block notice, disable submit
+      const waitUntil = new Date(completedAt.getTime() + 72 * 3600 * 1000);
+      const fmt = waitUntil.toLocaleString('en-GB', {
+        weekday: 'short', day: 'numeric', month: 'short',
+        hour: '2-digit', minute: '2-digit'
+      });
+      if (waitEl) waitEl.textContent = fmt;
+      earlyEl.classList.add('show');
+      balEl.classList.remove('show');
+      const bsecE = document.getElementById('balance-upload-section');
+      if (bsecE) { bsecE.style.display = 'none'; state.balanceFile = null; }
+    } else if (hoursAgo >= 72) {
+      // Passed 72hrs — show balance screenshot notice
+      balEl.classList.add('show');
+      earlyEl.classList.remove('show');
+      const bsec = document.getElementById('balance-upload-section');
+      if (bsec) bsec.style.display = 'block';
+    }
+  }
+
+  checkReady();
+}
+
+// ── Payout tier check ────────────────────────────────────────
+function checkPayout() {
+  // Proof is always required for reward claims — no payout-amount-based warning needed
+  updateProofLabel();
+}
+
+function updateProofLabel() {
+  const rl   = document.getElementById('proof-req-label');
+  const hint = document.getElementById('proof-hint');
+  const type = state.issueType;
+  // Proof is always required for reward and advertiser — no payout threshold check
+  const mandatory = type === 'reward' || type === 'advertiser';
+  if (rl) rl.innerHTML = mandatory
+    ? '<span class="req">* required</span>'
+    : '<span class="opt">(optional)</span>';
+  if (hint && !api1State.loaded) {
+    // Only set generic hint if API1 hasn't already set offer-specific requirements
+    if (type === 'reward') {
+      hint.textContent = 'Required — upload a screenshot of your completed offer (subscription screen, confirmation email, or receipt).';
+      hint.style.display = 'block';
+    } else {
+      hint.style.display = 'none';
+    }
+  }
+}
+
+// ── Character count ──────────────────────────────────────────
+function updateChar() {
+  const d  = document.getElementById('f-desc');
+  const cc = document.getElementById('char-count');
+  if (!d || !cc) return;
+  // Hard cap at 500
+  if (d.value.length > 500) d.value = d.value.substring(0, 500);
+  const n = d.value.length;
+  cc.textContent = n + ' / 500';
+  cc.classList.toggle('warn', n > 450);
+}
+
+// ── File upload ──────────────────────────────────────────────
+function handleFiles(input) {
+  const newFiles = Array.from(input.files);
+  state.files = [...state.files, ...newFiles].slice(0, 5);
+  const list = document.getElementById('file-list');
+  const txt  = document.getElementById('upload-txt');
+  if (list) {
+    list.innerHTML = state.files.map((f, i) => `
+      <div class="file-item">
+        <span>📄 ${f.name}</span>
+        <span class="sz">${(f.size / 1024 / 1024).toFixed(1)} MB</span>
+        <span class="rm" onclick="removeFile(${i})">×</span>
+      </div>`).join('');
+  }
+  if (txt) txt.textContent = state.files.length
+    ? `${state.files.length} file${state.files.length > 1 ? 's' : ''} selected`
+    : 'Click to upload a screenshot or receipt';
+  input.value = '';
+  checkReady();
+}
+
+function removeFile(i) {
+  state.files.splice(i, 1);
+  handleFiles({ files: state.files });
+}
+
+function handleBalanceFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  state.balanceFile = file;
+  input.value = '';
+  const txt  = document.getElementById('balance-upload-txt');
+  const item = document.getElementById('balance-file-item');
+  const zone = document.getElementById('balance-upload-zone');
+  if (txt)  txt.textContent = file.name;
+  if (zone) zone.style.borderStyle = 'solid';
+  if (item) item.innerHTML = `
+    <div class="file-item">
+      <span>📄 ${file.name}</span>
+      <span class="sz">${(file.size / 1024 / 1024).toFixed(1)} MB</span>
+      <span class="rm" onclick="removeBalanceFile()">×</span>
+    </div>`;
+  checkReady();
+}
+
+function removeBalanceFile() {
+  state.balanceFile = null;
+  const txt  = document.getElementById('balance-upload-txt');
+  const item = document.getElementById('balance-file-item');
+  const zone = document.getElementById('balance-upload-zone');
+  if (txt)  txt.textContent = 'Click to upload your account balance screenshot';
+  if (item) item.innerHTML = '';
+  if (zone) zone.style.borderStyle = 'dashed';
+  checkReady();
+}
+
+// ── Progress bar ─────────────────────────────────────────────
+function updateProgress() {
+  const fields = ['f-user','f-email','f-offer','f-payout','f-date','f-desc'];
+  const total = fields.length + 3; // + source + issueType + issueSub
+  let done = 0;
+  if (state.source)    done++;
+  if (state.issueType) done++;
+  if (state.issueSub)  done++;
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && el.value && el.value.trim()) done++;
+  });
+  const pct = Math.min(Math.round((done / total) * 100), 95);
+  const fill = document.getElementById('progress-fill');
+  if (fill) fill.style.width = pct + '%';
+}
+
+// ── Validate + enable submit button ─────────────────────────
+function checkReady() {
+  updateProgress();
+  const g   = id => (document.getElementById(id) || {}).value || '';
+  const src = state.source;
+  if (!src) return;
+  const isApp = src === 'lootup-app';
+  const isPP  = src === 'pixelpoint-web';
+  const isAPI = src === 'offerwall';
+
+  const user   = g('f-user').trim();
+  const userOk = isPP ? true : !!user;
+  const email  = g('f-email').trim();
+  const desc   = g('f-desc').trim();
+  const isOther = state.issueSub && state.issueSub.toLowerCase() === 'other';
+  const minDesc = isOther ? 50 : 10;
+
+  const needsPayout = isApp && state.issueType === 'reward';
+  const payout      = parseFloat(g('f-payout'));
+  const highPay     = needsPayout && payout > 5;
+  const payoutOk    = !needsPayout || (!isNaN(payout) && payout > 0);
+
+  const offer   = isAPI ? g('f-offer').trim() : 'n/a';
+  const offerOk = !isAPI || !!offer;
+
+  const date    = (isApp || isAPI) ? g('f-date') : 'n/a';
+
+  const isBlocked = isApp && state.issueType === '3rdparty';
+
+  // Issue valid per source
+  let issueOk = false;
+  if (isApp) {
+    if      (isBlocked)                    issueOk = false;
+    else if (state.issueType === 'other')  issueOk = true;
+    else                                   issueOk = !!state.issueType && !!state.issueSub;
+  } else if (isPP) {
+    issueOk = !!state.issueType;
+    if (state.issueType === 'PixelPoint user support') issueOk = issueOk && !!g('f-sites');
+    if (state.issueType === 'Creator inquiries')       issueOk = issueOk && !!g('f-creator');
+    if (state.issueType === 'Account suspended')       issueOk = issueOk && !!g('f-device-pp') && !!g('f-vpn') && !!g('f-ip-pp');
+  } else if (isAPI) {
+    if (state.issueType === 'other') issueOk = true;
+    else                             issueOk = !!state.issueType && !!state.issueSub;
+  }
+
+  const fullnameOk = !isAPI || !!g('f-fullname').trim();
+
+  // 72hr block (reward, app/API only)
+  let tooEarly = false;
+  if ((isApp || isAPI) && state.issueType === 'reward' && date && date !== 'n/a') {
+    const hrs = (new Date() - new Date(date)) / 3600000;
+    tooEarly = hrs >= 0 && hrs < 72;
+  }
+
+  // Proof mandatory for reward claims regardless of payout amount
+  const proofMandatory = (isApp || isAPI) && state.issueType === 'reward';
+  const proofOk        = !proofMandatory || state.files.length > 0;
+
+  // Balance screenshot when 72+hrs
+  const needsBalance = (isApp || isAPI) && state.issueType === 'reward' &&
+    date && date !== 'n/a' && (new Date() - new Date(date)) / 3600000 >= 72;
+  const balanceOk = !needsBalance || !!state.balanceFile;
+
+  // Multi-event: at least one checkbox must be checked
+  var eventFieldEl = document.getElementById('event-field');
+  var eventsOk = !eventFieldEl || getSelectedEvents().length > 0;
+
+  const valid = userOk && email.includes('@') && payoutOk && offerOk && fullnameOk &&
+                (date === 'n/a' || !!date) &&
+                desc.length >= minDesc && issueOk && proofOk && balanceOk &&
+                !isBlocked && !tooEarly && eventsOk;
+
+  const btn  = document.getElementById('btn-submit');
+  const note = document.getElementById('submit-note');
+  if (btn) btn.disabled = !valid;
+  if (note) {
+    note.classList.remove('err-state');
+    if (valid) {
+      note.textContent = 'Ready — click to send your request';
+    } else if (isBlocked) {
+      note.classList.add('err-state');
+      note.textContent = '3rd party offerwall issues must be handled directly with the offerwall provider.';
+    } else if (!email.includes('@')) {
+      note.textContent = 'Enter a valid email address';
+    } else if (!payoutOk && needsPayout) {
+      note.textContent = 'Enter the payout amount';
+    } else if (!offerOk) {
+      note.textContent = 'Enter the offer name or ID';
+    } else if (!fullnameOk) {
+      note.textContent = 'Enter your full name';
+    } else if (date !== 'n/a' && !date) {
+      note.textContent = 'Select when you completed the offer';
+    } else if (tooEarly) {
+      note.classList.add('err-state');
+      note.textContent = 'Please wait — less than 72 hours have passed since completion.';
+    } else if (!issueOk) {
+      note.textContent = state.issueType ? 'Fill in all required fields for this issue type' : 'Select the issue type';
+    } else if (desc.length < minDesc) {
+      note.textContent = 'Description needs at least ' + minDesc + ' characters (' + desc.length + ' so far)';
+    } else if (proofMandatory && state.files.length === 0) {
+      note.classList.add('err-state');
+      note.textContent = 'Upload proof of completion — required for reward claims';
+    } else if (!balanceOk) {
+      note.classList.add('err-state');
+      note.textContent = 'Upload your account balance screenshot — required when 72+ hours have passed';
+    } else if (!eventsOk) {
+      note.classList.add('err-state');
+      note.textContent = 'Select at least one offer event you are claiming for';
+    } else {
+      note.textContent = 'Almost there…';
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════════════════
+// BUILD ZENDESK TICKET PAYLOAD
+// ══════════════════════════════════════════════════════════════
+function buildPayload() {
+  const g = id => (document.getElementById(id) || {}).value || '';
+  const src = state.source;
+
+  const username   = g('f-user').trim();
+  const email      = g('f-email').trim() || `${username.replace(/\s/g,'')}@unknown.com`;
+  const offer      = g('f-offer').trim();
+  const offerId    = g('f-offerid') || offer;
+  const campaign   = g('f-campaign') || '';
+  const clickId    = ''; // removed
+  const payout     = g('f-payout').trim();
+  const date       = g('f-date');
+  const desc       = g('f-desc').trim();
+  const device     = g('f-device') || g('f-device-pp') || '';
+  const country    = g('f-country') || '';
+  const ip         = g('f-ip') || '';
+  const subject    = g('f-subject') || `${state.issueType} — ${offer}`;
+  const fullname   = g('f-fullname') || username;
+  const tier       = parseFloat(payout) > 5 ? 'High (>$5)' : 'Low (≤$5)';
+
+  // Structured body — everything the agent needs to see
+  const body = [
+    `━━━ USER SUBMISSION ━━━`,
+    `Source:          ${src}`,
+    `Username:        ${username}`,
+    `Email:           ${email}`,
+    country   ? `Country:         ${country}` : null,
+    device    ? `Device:          ${device}` : null,
+    ip        ? `IP address:      ${ip}` : null,
+    ``,
+    `━━━ OFFER DETAILS ━━━`,
+    `Offer:           ${offer}`,
+    campaign  ? `Campaign ID:     ${campaign}` : null,
+    clickId   ? `Click ID:        ${clickId}` : `Click ID:        Missing`,
+    `Payout:          $${payout} (${tier} tier)`,
+    `Completed:       ${date}`,
+    ``,
+    `━━━ ISSUE ━━━`,
+    `Issue type:      ${state.issueType || '—'}`,
+    state.issueSub !== state.issueType
+      ? `Sub-type:        ${state.issueSub || '—'}` : null,
+    getSelectedEvents().length > 0 ? `Events claimed:  ${getSelectedEvents().join(', ')}` : null,
+    ``,
+    `━━━ USER DESCRIPTION ━━━`,
+    desc,
+    ``,
+    `━━━ PROOF FILES ━━━`,
+    [...state.files, ...(state.balanceFile ? [state.balanceFile] : [])].length
+      ? [
+          ...state.files.map(f => `• ${f.name} (${(f.size/1024/1024).toFixed(1)} MB)`),
+          ...(state.balanceFile ? [`• [BALANCE SCREENSHOT] ${state.balanceFile.name} (${(state.balanceFile.size/1024/1024).toFixed(1)} MB)`] : [])
+        ].join('\n')
+      : 'No files uploaded'
+  ].filter(l => l !== null).join('\n');
+
+  // Tags for routing via Zendesk triggers
+  const tags = [
+    src,
+    (state.issueType || '').toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, ''),
+    tier === 'High (>$5)' ? 'high_payout' : 'low_payout',
+    !clickId ? 'missing_click_id' : null,
+    state.files.length > 0 ? 'proof_attached' : 'no_proof',
+  ].filter(Boolean);
+
+  return {
+    ticket: {
+      subject: subject || `Support request from ${username}`,
+      comment: { body },
+      requester: { name: fullname || username, email },
+      tags,
+      custom_fields: [
+        { id: CONFIG.FIELDS.source,      value: src },
+        { id: CONFIG.FIELDS.offer_id,    value: offer },
+        { id: CONFIG.FIELDS.campaign_id, value: campaign },
+        { id: CONFIG.FIELDS.click_id,    value: clickId },
+        { id: CONFIG.FIELDS.payout,      value: payout },
+        { id: CONFIG.FIELDS.tier,        value: tier },
+        { id: CONFIG.FIELDS.issue_type,  value: state.issueType || '' },
+        { id: CONFIG.FIELDS.issue_sub,   value: state.issueSub || '' },
+        { id: CONFIG.FIELDS.device,      value: device },
+        { id: CONFIG.FIELDS.country,     value: country },
+        { id: CONFIG.FIELDS.ip_address,  value: ip },
+      ]
+    }
+  };
+}
+
+// ══════════════════════════════════════════════════════════════
+// SUBMIT
+// ══════════════════════════════════════════════════════════════
+async function doSubmit() {
+  const btn     = document.getElementById('btn-submit');
+  const spinner = document.getElementById('spinner');
+  const label   = document.getElementById('btn-label');
+  const banner  = document.getElementById('error-banner');
+
+  // Loading state
+  btn.disabled    = true;
+  spinner.style.display = 'block';
+  label.textContent     = 'Sending…';
+  banner.classList.remove('show');
+
+  const payload = buildPayload();
+
+  try {
+    let ticketId;
+
+    if (CONFIG.DEV_MODE) {
+      // ── DEV MODE — simulates a Zendesk response ──────────────
+      console.log('DEV MODE — ticket payload:', JSON.stringify(payload, null, 2));
+      await new Promise(r => setTimeout(r, 1400)); // simulate network delay
+      ticketId = Math.floor(100000 + Math.random() * 900000);
+      console.log('DEV MODE — simulated Zendesk ticket ID:', ticketId);
+
+    } else {
+      // ── PRODUCTION — calls your backend proxy ────────────────
+      // Your proxy receives this payload and forwards it to:
+      // POST https://YOUR_SUBDOMAIN.zendesk.com/api/v2/tickets.json
+      // with Authorization: Basic base64(email/token:API_TOKEN)
+      //
+      // See proxy server code below.
+      const response = await fetch(CONFIG.PROXY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.message || `Server error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      // Your proxy should return: { ticketId: 12345 }
+      ticketId = data.ticketId || data.ticket?.id;
+    }
+
+    // Complete progress bar
+    document.getElementById('progress-fill').style.width = '100%';
+
+    // Show success page
+    setTimeout(() => {
+      document.getElementById('success-ticket-id').textContent =
+        `Ticket #${ticketId}`;
+      document.getElementById('page-form').classList.remove('active');
+      document.getElementById('page-success').classList.add('active');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, 400);
+
+  } catch (err) {
+    console.error('Submission error:', err);
+    banner.textContent = `Something went wrong: ${err.message}. Please try again or contact support directly.`;
+    banner.classList.add('show');
+    banner.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    label.textContent = 'Send request →';
+  }
+}
+
+// ── Reset ────────────────────────────────────────────────────
+function resetForm() {
+  state = { source: null, issueType: null, issueSub: null, files: [] };
+  document.querySelectorAll('.source-btn').forEach(b => b.classList.remove('on'));
+  document.getElementById('dynamic-fields').style.display = 'none';
+  document.getElementById('submit-bar').style.display = 'none';
+  document.getElementById('progress-fill').style.width = '0%';
+  document.getElementById('page-success').classList.remove('active');
+  document.getElementById('page-form').classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// ── URL params + initial API1 fetch ────────────────────────
+(function() {
+  const p = new URLSearchParams(window.location.search);
+  const src   = p.get('source');
+  const brand = p.get('brand') || 'Adwall';
+  document.getElementById('header-brand').textContent = brand;
+  document.title = 'Submit a support request — ' + brand;
+  // Pre-fetch offer context in the background so it's ready when the user picks a source
+  fetchOfferContext().then(function() {
+    console.log('API1 context loaded:', api1State.loaded);
+  });
+  // Auto-select source if passed in URL
+  if (src) {
+    var btn = document.querySelector('[onclick*="' + src + '"]');
+    if (btn) btn.click();
+  }
+})();
+// ── Wiki navigation ────────────────────────────────────────────────────────
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const target = document.getElementById('page-' + id);
+  if (target) target.classList.add('active');
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function wToc(id, el) {
+  document.querySelectorAll('.wiki-toc-a').forEach(a => a.classList.remove('on'));
+  el.classList.add('on');
+  const t = document.getElementById(id);
+  if (t) { const c = document.getElementById('wiki-content'); if (c) c.scrollTop = t.offsetTop - 20; t.scrollIntoView({behavior:'smooth', block:'start'}); }
+}
+
+function toggleFaq(el) {
+  const a = el.nextElementSibling;
+  const isOpen = a.classList.contains('open');
+  document.querySelectorAll('.faq-a.open').forEach(x => x.classList.remove('open'));
+  document.querySelectorAll('.faq-q.open').forEach(x => x.classList.remove('open'));
+  if (!isOpen) { a.classList.add('open'); el.classList.add('open'); }
+}
+
+</script>
+
+<!--
+════════════════════════════════════════════════════════════════
+BACKEND PROXY — deploy this on your server
+This keeps your Zendesk API token out of the browser.
+────────────────────────────────────────────────────────────────
+
+NODE.JS / EXPRESS:
+
+  const express = require('express');
+  const fetch   = require('node-fetch');
+  const cors    = require('cors');
+  const app     = express();
+
+  app.use(cors({ origin: ['https://your-publisher-site.com'] }));
+  app.use(express.json());
+
+  app.post('/api/submit-ticket', async (req, res) => {
+    const token = Buffer.from(
+      `${process.env.ZENDESK_EMAIL}/token:${process.env.ZENDESK_API_TOKEN}`
+    ).toString('base64');
+
+    const r = await fetch(
+      `https://${process.env.ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/tickets.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': `Basic ${token}`,
+          'Idempotency-Key': req.headers['x-idempotency-key'] || ''
+        },
+        body: JSON.stringify(req.body)
+      }
+    );
+
+    if (!r.ok) {
+      const err = await r.json();
+      return res.status(r.status).json({ message: err.description || 'Zendesk error' });
+    }
+
+    const data = await r.json();
+    res.json({ ticketId: data.ticket.id });
+  });
+
+  app.listen(3000);
+
+────────────────────────────────────────────────────────────────
+
+ENVIRONMENT VARIABLES (.env):
+
+  ZENDESK_SUBDOMAIN=your-subdomain
+  ZENDESK_EMAIL=agent@yourcompany.com
+  ZENDESK_API_TOKEN=your_api_token_from_admin_center
+
+────────────────────────────────────────────────────────────────
+
+EMBEDDING IN A PUBLISHER PAGE:
+
+  Option A — iframe (simplest, works everywhere):
+  <iframe
+    src="https://your-domain.com/claim-form.html?source=lootup-app&brand=Lootup"
+    width="100%"
+    height="900"
+    frameborder="0"
+    style="border-radius:12px">
+  </iframe>
+
+  Option B — link from a button:
+  <a href="https://your-domain.com/claim-form.html?source=lootup-app&brand=Lootup"
+     target="_blank">
+    Reach out →
+  </a>
+
+  The ?source= parameter pre-selects the platform so users skip Step 1.
+  The ?brand= parameter updates the header name.
+  Supported source values:
+    lootup-app · lootup-fb · pixelpoint-web · pixelpoint-fb · offerwall · email
+
+════════════════════════════════════════════════════════════════
+-->
+</body>
+</html>
